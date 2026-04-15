@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empathy Engine — AI Emotion Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --accent:#c8ff00;
+  --accent2:#00f5ff;
+  --accent3:#ff3cac;
+  --bg:#03030a;
+  --surface:#0a0a14;
+  --surface2:#0f0f1c;
+  --border:#1a1a2e;
+  --text:#e8e8f0;
+  --muted:#555570;
+}
+
+html{scroll-snap-type:y mandatory;scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;cursor:none;}
+
+#cursor{position:fixed;width:12px;height:12px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transition:transform 0.1s;mix-blend-mode:difference;}
+#cursor-ring{position:fixed;width:40px;height:40px;border:1px solid rgba(200,255,0,0.4);border-radius:50%;pointer-events:none;z-index:9998;transition:left 0.12s ease,top 0.12s ease;transform:translate(-50%,-50%);}
+
+#robot-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.7;}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 3rem;background:rgba(3,3,10,0.7);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,255,0,0.06);}
+.nav-logo{font-family:'Syne';font-size:1.2rem;font-weight:800;letter-spacing:2px;color:var(--accent);}
+.nav-links{display:flex;gap:2rem;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.85rem;letter-spacing:1px;text-transform:uppercase;transition:color 0.3s;}
+.nav-links a:hover{color:var(--accent);}
+.nav-badge{font-size:0.75rem;padding:6px 16px;border:1px solid var(--accent);color:var(--accent);border-radius:100px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+.nav-badge:hover{background:var(--accent);color:#000;}
+
+section{height:100vh;scroll-snap-align:start;position:relative;display:flex;justify-content:center;align-items:center;z-index:1;}
+
+.hero{flex-direction:column;text-align:center;overflow:hidden;}
+.hero-tag{font-size:0.72rem;letter-spacing:4px;text-transform:uppercase;color:var(--accent);border:1px solid rgba(200,255,0,0.25);padding:5px 18px;border-radius:100px;margin-bottom:2rem;display:inline-block;animation:fadeUp 0.8s ease both;}
+.hero h1{font-family:'Syne';font-size:clamp(3rem,8vw,7rem);font-weight:900;line-height:1;animation:fadeUp 0.9s ease both 0.1s;}
+.hero h1 span{color:transparent;-webkit-text-stroke:1px rgba(200,255,0,0.5);}
+.hero-sub{color:var(--muted);font-size:1.1rem;max-width:500px;margin:1.5rem auto 0;animation:fadeUp 1s ease both 0.2s;line-height:1.7;}
+.hero-cta{display:flex;gap:1rem;margin-top:2.5rem;justify-content:center;animation:fadeUp 1s ease both 0.3s;}
+.btn-primary{padding:14px 32px;background:var(--accent);color:#000;font-weight:700;border-radius:100px;text-decoration:none;font-size:0.9rem;letter-spacing:0.5px;transition:all 0.3s;cursor:pointer;border:none;font-family:'DM Sans';}
+.btn-primary:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(200,255,0,0.3);}
+.btn-ghost{padding:14px 32px;border:1px solid var(--border);color:var(--text);border-radius:100px;text-decoration:none;font-size:0.9rem;letter-spacing:0.5px;transition:all 0.3s;cursor:pointer;background:transparent;font-family:'DM Sans';}
+.btn-ghost:hover{border-color:var(--muted);}
+
+.scroll-hint{position:absolute;bottom:2rem;display:flex;flex-direction:column;align-items:center;gap:8px;animation:fadeUp 1s ease both 0.5s;}
+.scroll-hint span{font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+.scroll-line{width:1px;height:50px;background:linear-gradient(to bottom,var(--accent),transparent);animation:scrollPulse 2s ease-in-out infinite;}
+@keyframes scrollPulse{0%,100%{opacity:0.3;transform:scaleY(0.5);}50%{opacity:1;transform:scaleY(1);}}
+
+.stats-section{background:transparent;}
+.stats-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;width:90%;max-width:900px;border:1px solid var(--border);border-radius:24px;overflow:hidden;background:var(--border);}
+.stat-block{background:var(--surface);padding:3rem 2rem;text-align:center;transition:background 0.3s;}
+.stat-block:hover{background:var(--surface2);}
+.stat-num{font-family:'Syne';font-size:3.5rem;font-weight:900;color:var(--accent);display:block;}
+.stat-label{color:var(--muted);font-size:0.85rem;letter-spacing:1px;margin-top:6px;}
+
+.app-section{align-items:center;flex-direction:column;}
+.app-card{width:90%;max-width:780px;background:var(--surface);border:1px solid var(--border);border-radius:28px;overflow:hidden;position:relative;box-shadow:0 60px 120px rgba(0,0,0,0.8);}
+.app-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.app-dots{display:flex;gap:8px;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot.r{background:#ff5f56;}.dot.y{background:#ffbd2e;}.dot.g{background:#27c93f;}
+.app-title{font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.app-status{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--accent);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.app-body{padding:2rem;}
+
+.emotion-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;}
+.etag{font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;padding:4px 14px;border-radius:100px;cursor:pointer;transition:all 0.2s;border:1px solid var(--border);color:var(--muted);}
+.etag:hover,.etag.active{border-color:var(--accent);color:var(--accent);background:rgba(200,255,0,0.05);}
+
+/* ── VOICE GENDER TOGGLE ── */
+.voice-section{margin-bottom:1.5rem;}
+.voice-label{font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:0.8rem;display:block;}
+.gender-toggle{display:flex;gap:10px;}
+.gender-btn{
+  flex:1;padding:12px 0;
+  border-radius:14px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);
+  font-family:'DM Sans';font-size:0.9rem;font-weight:500;
+  cursor:pointer;transition:all 0.25s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.gender-btn:hover{border-color:rgba(200,255,0,0.3);color:var(--text);}
+.gender-btn.active{
+  background:rgba(200,255,0,0.08);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.gender-btn .g-icon{font-size:1.2rem;}
+.gender-btn .g-name{font-weight:600;}
+.gender-btn .g-voice{font-size:0.72rem;color:var(--muted);margin-left:4px;}
+.gender-btn.active .g-voice{color:rgba(200,255,0,0.6);}
+
+.textarea-wrap{position:relative;margin-bottom:1.5rem;}
+textarea{width:100%;height:130px;background:var(--bg);border:1px solid var(--border);border-radius:16px;color:var(--text);padding:1.2rem 1.5rem;font-size:1rem;font-family:'DM Sans';resize:none;outline:none;transition:border-color 0.3s;line-height:1.6;}
+textarea:focus{border-color:rgba(200,255,0,0.3);}
+textarea::placeholder{color:var(--muted);}
+.char-count{position:absolute;bottom:12px;right:16px;font-size:0.72rem;color:var(--muted);}
+
+.submit-row{display:flex;gap:1rem;align-items:center;}
+.submit-btn{flex:1;padding:1rem;background:var(--accent);color:#000;border:none;border-radius:14px;font-size:1rem;font-weight:700;font-family:'DM Sans';cursor:pointer;transition:all 0.3s;letter-spacing:0.5px;}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(200,255,0,0.3);}
+.submit-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+
+#loader{display:none;margin-top:1.5rem;background:var(--bg);border-radius:14px;padding:1rem 1.5rem;border:1px solid var(--border);}
+.loader-inner{display:flex;align-items:center;gap:1rem;}
+.loader-bars{display:flex;gap:4px;align-items:center;height:30px;}
+.bar-anim{width:4px;border-radius:4px;background:var(--accent);animation:barUp 0.8s ease-in-out infinite;}
+.bar-anim:nth-child(2){animation-delay:0.1s;}.bar-anim:nth-child(3){animation-delay:0.2s;}.bar-anim:nth-child(4){animation-delay:0.3s;}.bar-anim:nth-child(5){animation-delay:0.4s;}
+@keyframes barUp{0%,100%{height:6px;}50%{height:28px;}}
+
+#history-wrap{border-top:1px solid var(--border);margin-top:1.5rem;padding-top:1.5rem;}
+.history-label{font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.history-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg);padding:10px 14px;margin-top:6px;border-radius:10px;color:var(--muted);cursor:pointer;border:1px solid transparent;transition:all 0.2s;font-size:0.88rem;}
+.history-item:hover{border-color:var(--border);color:var(--text);}
+.history-item span{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
+
+.features-section{align-items:center;flex-direction:column;}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;width:90%;max-width:1000px;}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem;transition:all 0.3s;cursor:default;}
+.feature-card:hover{border-color:rgba(200,255,0,0.2);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.feature-icon{width:48px;height:48px;border-radius:14px;background:rgba(200,255,0,0.07);border:1px solid rgba(200,255,0,0.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:1.2rem;}
+.feature-card h3{font-family:'Syne';font-size:1.1rem;margin-bottom:8px;font-weight:700;}
+.feature-card p{color:var(--muted);font-size:0.88rem;line-height:1.6;}
+
+.section-label{position:absolute;top:2rem;left:50%;transform:translateX(-50%);font-size:0.7rem;letter-spacing:4px;text-transform:uppercase;color:var(--muted);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+
+.progress-nav{position:fixed;right:2rem;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;z-index:50;}
+.pnav-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all 0.3s;cursor:pointer;}
+.pnav-dot.active{background:var(--accent);transform:scale(1.4);}
+
+.grid-bg{position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(200,255,0,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(200,255,0,0.015) 1px,transparent 1px);background-size:80px 80px;z-index:0;pointer-events:none;}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<canvas id="robot-canvas"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <div class="nav-logo">EMPATHY.AI</div>
+  <div class="nav-links">
+    <a href="#hero">Home</a>
+    <a href="#app">Analyze</a>
+    <a href="#features">Features</a>
+  </div>
+  <div class="nav-badge">Beta v2.0</div>
+</nav>
+
+<div class="progress-nav">
+  <div class="pnav-dot active" onclick="scrollToSection(0)"></div>
+  <div class="pnav-dot" onclick="scrollToSection(1)"></div>
+  <div class="pnav-dot" onclick="scrollToSection(2)"></div>
+  <div class="pnav-dot" onclick="scrollToSection(3)"></div>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-tag">◆ Emotion Intelligence Layer</div>
+  <h1>Feel. Detect.<br><span>Understand.</span></h1>
+  <p class="hero-sub">AI that reads between the lines — detecting emotion, tone, and intent with natural male &amp; female voices.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="scrollToSection(2)">Try It Now</button>
+    <button class="btn-ghost" onclick="scrollToSection(3)">See Features</button>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><div class="scroll-line"></div></div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section" id="stats">
+  <div class="section-label">By the numbers</div>
+  <div class="stats-inner">
+    <div class="stat-block"><span class="stat-num" data-target="98">0</span><div class="stat-label">Accuracy %</div></div>
+    <div class="stat-block"><span class="stat-num" data-target="7">0</span><div class="stat-label">Emotions Detected</div></div>
+    <div class="stat-block"><span class="stat-num" data-target="14">0</span><div class="stat-label">Neural Voices</div></div>
+  </div>
+</section>
+
+<!-- APP -->
+<section class="app-section" id="app">
+  <div class="section-label">Analyze</div>
+  <div class="app-card">
+    <div class="app-header">
+      <div class="app-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+      <div class="app-title">Emotion Analyzer</div>
+      <div class="app-status"><div class="status-dot"></div>AI Ready</div>
+    </div>
+    <div class="app-body">
+
+      <!-- Emotion Tags -->
+      <div class="emotion-tags">
+        <div class="etag" onclick="setTag(this,'Happy')">😊 Happy</div>
+        <div class="etag" onclick="setTag(this,'Sad')">😔 Sad</div>
+        <div class="etag" onclick="setTag(this,'Angry')">😤 Angry</div>
+        <div class="etag" onclick="setTag(this,'Anxious')">😰 Anxious</div>
+        <div class="etag" onclick="setTag(this,'Excited')">🤩 Excited</div>
+      </div>
+
+      <form method="POST" action="/generate" onsubmit="return handleSubmit()">
+
+        <!-- ── VOICE GENDER SELECTOR ── -->
+        <div class="voice-section">
+          <span class="voice-label">🎙 Choose Voice</span>
+          <div class="gender-toggle">
+            <button type="button" class="gender-btn active" id="btn-female" onclick="selectGender('female')">
+              <span class="g-icon">👩</span>
+              <span class="g-name">Female</span>
+              <span class="g-voice">Aria / Jenny</span>
+            </button>
+            <button type="button" class="gender-btn" id="btn-male" onclick="selectGender('male')">
+              <span class="g-icon">👨</span>
+              <span class="g-name">Male</span>
+              <span class="g-voice">Guy / Tony</span>
+            </button>
+          </div>
+          <!-- Hidden input to send gender to Flask -->
+          <input type="hidden" name="gender" id="genderInput" value="female">
+        </div>
+
+        <!-- Text Input -->
+        <div class="textarea-wrap">
+          <textarea id="textInput" name="text"
+            placeholder="Type anything — a feeling, a thought, a story…"
+            required maxlength="500"
+            oninput="updateCount(this)"></textarea>
+          <div class="char-count" id="charCount">0 / 500</div>
+        </div>
+
+        <div class="submit-row">
+          <button class="submit-btn" type="submit" id="submitBtn">Analyze &amp; Speak →</button>
+        </div>
+      </form>
+
+      <div id="loader">
+        <div class="loader-inner">
+          <div class="loader-bars">
+            <div class="bar-anim"></div><div class="bar-anim"></div>
+            <div class="bar-anim"></div><div class="bar-anim"></div><div class="bar-anim"></div>
+          </div>
+          <span style="color:var(--muted);font-size:0.9rem;">Generating voice with AI neural synthesis…</span>
+        </div>
+      </div>
+
+      <div id="history-wrap">
+        <div class="history-label">Recent Inputs</div>
+        <div id="history"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="section-label">Capabilities</div>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">🧠</div><h3>Neural Emotion Map</h3><p>7 distinct emotions detected using a transformer model fine-tuned on 20k real-world samples.</p></div>
+    <div class="feature-card"><div class="feature-icon">👥</div><h3>Male &amp; Female Voices</h3><p>14 Microsoft Neural voices — choose male or female for each emotion-driven speech output.</p></div>
+    <div class="feature-card"><div class="feature-icon">🎚</div><h3>Adaptive Prosody</h3><p>Rate, pitch and volume shift dynamically based on emotion type and confidence intensity.</p></div>
+    <div class="feature-card"><div class="feature-icon">🔒</div><h3>Zero Data Retention</h3><p>Your words are processed in memory and never stored or logged anywhere.</p></div>
+    <div class="feature-card"><div class="feature-icon">⚡</div><h3>Edge TTS Engine</h3><p>Powered by Microsoft Edge Neural TTS — free, high quality, no API key required.</p></div>
+    <div class="feature-card"><div class="feature-icon">📊</div><h3>Confidence Scoring</h3><p>Every emotion comes with a confidence score that scales the vocal modulation intensity.</p></div>
+  </div>
+</section>
+
+<script>
+/* CURSOR */
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=(mx-6)+'px';cursor.style.top=(my-6)+'px';});
+setInterval(()=>{rx+=(mx-rx)*0.15;ry+=(my-ry)*0.15;ring.style.left=rx+'px';ring.style.top=ry+'px';},16);
+
+/* CANVAS */
+const canvas=document.getElementById('robot-canvas');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+const nodes=[];
+for(let i=0;i<55;i++)nodes.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.4,r:Math.random()*2+1,pulse:Math.random()*Math.PI*2});
+
+function drawRobot(cx,cy,scale,time){
+  ctx.save();ctx.translate(cx,cy);ctx.scale(scale,scale);
+  const s=Math.sin(time*0.5)*3;
+  ctx.strokeStyle='rgba(200,255,0,0.12)';ctx.lineWidth=1;ctx.fillStyle='rgba(200,255,0,0.02)';
+  ctx.beginPath();ctx.roundRect(-40,-20+s,80,100,10);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.roundRect(-28,-65+s,56,40,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle=`rgba(200,255,0,${0.6+Math.sin(time*2)*0.2})`;
+  ctx.beginPath();ctx.arc(-12,-48+s,5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(12,-48+s,5,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(200,255,0,0.08)';ctx.lineWidth=8;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-40,10+s);ctx.lineTo(-65,60+s);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(40,10+s);ctx.lineTo(65,60+s);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-18,80+s);ctx.lineTo(-22,140+s);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(18,80+s);ctx.lineTo(22,140+s);ctx.stroke();
+  ctx.restore();
+}
+
+function animateCanvas(t){
+  requestAnimationFrame(animateCanvas);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const time=t*0.001;
+  drawRobot(canvas.width*0.12,canvas.height*0.5,1.1,time);
+  drawRobot(canvas.width*0.88,canvas.height*0.5,0.9,time+1);
+  nodes.forEach(n=>{
+    n.x+=n.vx;n.y+=n.vy;
+    if(n.x<0||n.x>canvas.width)n.vx*=-1;
+    if(n.y<0||n.y>canvas.height)n.vy*=-1;
+    n.pulse+=0.02;
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,255,0,${0.3+Math.sin(n.pulse)*0.2})`;ctx.fill();
+  });
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<120){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.strokeStyle=`rgba(200,255,0,${0.06*(1-dist/120)})`;ctx.lineWidth=0.5;ctx.stroke();}
+  }
+}
+requestAnimationFrame(animateCanvas);
+
+/* GENDER TOGGLE */
+let selectedGender='female';
+function selectGender(g){
+  selectedGender=g;
+  document.getElementById('genderInput').value=g;
+  document.getElementById('btn-female').classList.toggle('active',g==='female');
+  document.getElementById('btn-male').classList.toggle('active',g==='male');
+}
+
+/* FORM SUBMIT */
+function handleSubmit(){
+  const text=document.getElementById('textInput').value.trim();
+  if(!text)return false;
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('submitBtn').textContent='Generating…';
+  document.getElementById('loader').style.display='block';
+  return true;
+}
+
+/* CHAR COUNT */
+function updateCount(el){document.getElementById('charCount').textContent=el.value.length+' / 500';}
+
+/* EMOTION TAGS */
+const samples={
+  'Happy':'We just closed the biggest deal of the year! I am so excited right now!',
+  'Sad':'I lost the project and I have no idea what to do anymore.',
+  'Angry':'I cannot believe you missed the deadline again. This is completely unacceptable.',
+  'Anxious':'I am not sure what is going to happen next. Everything feels so uncertain.',
+  'Excited':'Wait, you actually got that working?! That is absolutely incredible!'
+};
+function setTag(el,emotion){
+  document.querySelectorAll('.etag').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('textInput').value=samples[emotion]||'';
+  updateCount(document.getElementById('textInput'));
+}
+
+/* SCROLL NAV */
+const sections=[document.getElementById('hero'),document.getElementById('stats'),document.getElementById('app'),document.getElementById('features')];
+const dots=document.querySelectorAll('.pnav-dot');
+function scrollToSection(i){sections[i].scrollIntoView({behavior:'smooth'});}
+const observer=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting){const i=sections.indexOf(e.target);dots.forEach(d=>d.classList.remove('active'));if(i>=0)dots[i].classList.add('active');}});},{threshold:0.5});
+sections.forEach(s=>observer.observe(s));
+
+/* COUNTER */
+const counterObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('[data-target]').forEach(el=>{const target=+el.dataset.target;let current=0;const step=target/60;const t=setInterval(()=>{current=Math.min(current+step,target);el.textContent=Math.round(current)+(el.dataset.target=='98'?'.4%':'');if(current>=target)clearInterval(t);},16);});counterObs.disconnect();}});
+},{threshold:0.5});
+counterObs.observe(document.getElementById('stats'));
+
+/* HISTORY */
+let hist=[];
+try{hist=JSON.parse(localStorage.getItem('empathy_h'))||[];}catch(e){hist=[];}
+const input=document.getElementById('textInput');
+input.addEventListener('change',()=>{
+  const v=input.value.trim();if(!v)return;
+  hist=hist.filter(x=>x.text!==v);
+  hist.unshift({text:v,time:new Date().toLocaleTimeString()});
+  if(hist.length>5)hist.pop();
+  try{localStorage.setItem('empathy_h',JSON.stringify(hist));}catch(e){}
+  renderHistory();
+});
+function renderHistory(){
+  const h=document.getElementById('history');h.innerHTML='';
+  if(!hist.length){h.innerHTML='<div style="color:var(--muted);font-size:0.82rem;padding:6px 0;">No recent inputs yet.</div>';return;}
+  hist.forEach(item=>{const d=document.createElement('div');d.className='history-item';d.innerHTML=`<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80%">${item.text}</div><span>${item.time}</span>`;d.onclick=()=>{input.value=item.text;updateCount(input);};h.appendChild(d);});
+}
+renderHistory();
+</script>
+</body>
+</html>
